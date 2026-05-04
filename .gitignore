@@ -1,0 +1,31 @@
+# BUILD
+build/
+out/
+
+## Dear ImGui artifacts
+imgui.ini
+imgui*.ini
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+# CUDA
+*.cubin
+*.fatbin
+*.ptx
+
+# Compiled Outputs
+*.o
+*.a
+*.so
+
+# Editor
+.vscode/
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
