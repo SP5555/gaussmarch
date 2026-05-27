@@ -3,7 +3,7 @@
 #include <string>
 
 #include "cxxopts.hpp"
-#include "app/particle_viewer_app.h"
+#include "app/gaussmarch_app.h"
 #include "utils/logs.h"
 
 int main(int argc, char *argv[])
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     }
 
     try {
-        ParticleViewerApp app(path, scale, cam_mode);
+        GaussmarchApp app(path, scale, cam_mode);
         app.start();
     } catch (const std::exception &e) {
         log_error("Main", std::string("Fatal: ") + e.what());
