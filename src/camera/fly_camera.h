@@ -55,7 +55,7 @@ private:
     glm::quat orientation = glm::quat(1.f, 0.f, 0.f, 0.f);
 
     // ---- camera ----
-    glm::vec3 position = {0.f, 0.f, 3.f};
+    glm::vec3 position = {0.f, 0.f, 5.f};
     float pitch = 0.f;
 
     glm::vec3 plane_forward  = {0.f, 0.f, -1.f};
