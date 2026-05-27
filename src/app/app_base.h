@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h> // must follow glad (pulls in GL/gl.h)
+#include <optix.h>
 
 #include "../graphics/gl_object.h"
 #include "../input/input.h"
@@ -56,6 +57,9 @@ protected:
     // expose states for ImGui to display
     float getFPS() const { return avg_fps; }
     float getFrametime() const { return 1000.f / avg_fps; } // in ms
+
+    // OptiX context -- available to all subclasses
+    OptixDeviceContext optix_context = nullptr;
 
     // window / input state
     GLFWwindow *window = nullptr;
