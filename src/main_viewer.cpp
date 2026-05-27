@@ -1,50 +1,50 @@
-#include <algorithm>
 #include <iostream>
+#include <algorithm>
+#include <string>
+
 #include "cxxopts.hpp"
-#include "app/viewer_app.h"
+#include "app/particle_viewer_app.h"
 #include "utils/logs.h"
 
 int main(int argc, char *argv[])
 {
-    cxxopts::Options options("viewer", "PLY Scene Viewer");
-
+    cxxopts::Options options("gaussmarch", "Gaussian volume renderer");
     options.add_options()
-        ("S,scene",  "Path to PLY scene file", cxxopts::value<std::string>()->default_value(""))
-        ("s,scale",  "Scene scale",             cxxopts::value<float>()->default_value("1.0"))
-        ("c,camera", "Camera mode (arcball, fly)", cxxopts::value<std::string>()->default_value("arcball"))
+        ("s,scene",   "Path to VEG PLY file",
+                     cxxopts::value<std::string>()->default_value(""))
+        ("scale",    "Scene scale (default 1.0)",
+                     cxxopts::value<float>()->default_value("1.0"))
+        ("c,camera", "Camera mode: fly | arcball",
+                     cxxopts::value<std::string>()->default_value("arcball"))
         ("help",     "Print usage");
 
     auto result = options.parse(argc, argv);
-
     if (result.count("help")) {
-        std::cout << options.help() << std::endl;
+        std::cout << options.help() << "\n";
         return 0;
     }
 
-    std::string ply_path   = result["scene"].as<std::string>();
-    float scale            = result["scale"].as<float>();
-    std::string camera_str = result["camera"].as<std::string>();
+    std::string path    = result["scene"].as<std::string>();
+    float       scale   = result["scale"].as<float>();
+    std::string cam_str = result["camera"].as<std::string>();
+    std::transform(cam_str.begin(), cam_str.end(), cam_str.begin(), ::tolower);
 
-    /* ===== Argument Validation ===== */
-    if (scale <= 0.f) {
-        log_error("Main", "Error: scale must be a positive number.");
+    CameraMode cam_mode = CameraMode::Arcball;
+    if (cam_str == "fly") cam_mode = CameraMode::Fly;
+    else if (cam_str != "arcball") {
+        log_error("Main", "Invalid camera mode. Valid options: fly, arcball.");
         return 1;
     }
 
-    std::transform(camera_str.begin(), camera_str.end(), camera_str.begin(), ::tolower);
-    CameraMode camera_mode;
-    if      (camera_str == "arcball") camera_mode = CameraMode::Arcball;
-    else if (camera_str == "fly")     camera_mode = CameraMode::Fly;
-    else {
-        log_error("Main", "Error: invalid camera mode. Valid options: arcball, fly.");
+    if (scale <= 0.f) {
+        log_error("Main", "scale must be a positive number.");
         return 1;
     }
 
     try {
-        ViewerApp app(ply_path, scale, camera_mode);
+        ParticleViewerApp app(path, scale, cam_mode);
         app.start();
-    }
-    catch (const std::exception &e) {
+    } catch (const std::exception &e) {
         log_error("Main", std::string("Fatal: ") + e.what());
         return 1;
     }

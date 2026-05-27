@@ -7,8 +7,17 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+:: Check OptiX
+if "%OPTIX_INSTALL_DIR%"=="" (
+    echo ERROR: OPTIX_INSTALL_DIR is not set.
+    echo   set OPTIX_INSTALL_DIR=C:\path\to\OptiX
+    echo   Or pass it directly: cmake .. -DOptiX_INSTALL_DIR=C:\path\to\OptiX
+    exit /b 1
+)
+
 for /f "tokens=*" %%i in ('where nvcc') do set NVCC_PATH=%%i
 echo Using nvcc: %NVCC_PATH%
+echo OptiX: %OPTIX_INSTALL_DIR%
 
 if not exist build mkdir build
 cd build
@@ -16,7 +25,8 @@ cd build
 cmake .. ^
     -G "Visual Studio 17 2022" ^
     -A x64 ^
-    "-DCMAKE_CUDA_ARCHITECTURES=86;89" ^
-    -DCMAKE_CUDA_COMPILER="%NVCC_PATH%"
+    -DCMAKE_CUDA_ARCHITECTURES=89 ^
+    -DCMAKE_CUDA_COMPILER="%NVCC_PATH%" ^
+    -DOptiX_INSTALL_DIR="%OPTIX_INSTALL_DIR%"
 
 cmake --build . --config Release --parallel

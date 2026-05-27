@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(diffsplat LANGUAGES C CXX CUDA)
+project(gaussmarch LANGUAGES C CXX CUDA)
 
 # ===== Standards =====
 set(CMAKE_CXX_STANDARD 17)
@@ -10,11 +10,39 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ===== CUDA Architecture =====
-# Common values: 75=Turing, 86=Ampere, 89=Ada, 90=Hopper
-# Override: cmake -DCMAKE_CUDA_ARCHITECTURES=89 ..
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 86 89 90)
+# RTX 4060 Laptop = SM 8.9.
+set(CMAKE_CUDA_ARCHITECTURES 89)
+set(PARTRACE_PTX_ARCH "sm_89" CACHE STRING "PTX target architecture for gaussmarch.cu")
+
+# ===== OptiX SDK =====
+# Pass -DOptiX_INSTALL_DIR=/path/to/OptiX at configure time, or set the
+# OPTIX_INSTALL_DIR environment variable. Common install locations are
+# checked automatically as a fallback.
+set(OptiX_INSTALL_DIR "$ENV{OPTIX_INSTALL_DIR}" CACHE PATH "Root directory of the OptiX SDK installation")
+
+if(NOT OptiX_INSTALL_DIR)
+    # Check common default install paths
+    foreach(_candidate
+        "/opt/optix"
+        "/usr/local/optix"
+        "$ENV{HOME}/optix"
+        "C:/ProgramData/NVIDIA Corporation/OptiX SDK 8.1.0"
+    )
+        if(EXISTS "${_candidate}/include/optix.h")
+            set(OptiX_INSTALL_DIR "${_candidate}")
+            break()
+        endif()
+    endforeach()
 endif()
+
+set(OptiX_INCLUDE "${OptiX_INSTALL_DIR}/include")
+if(NOT EXISTS "${OptiX_INCLUDE}/optix.h")
+    message(FATAL_ERROR
+        "OptiX SDK not found. Set OptiX_INSTALL_DIR:\n"
+        "  cmake .. -DOptiX_INSTALL_DIR=/path/to/OptiX\n"
+        "Or set the OPTIX_INSTALL_DIR environment variable.")
+endif()
+message(STATUS "OptiX include: ${OptiX_INCLUDE}")
 
 # ===== Dependencies =====
 find_package(OpenGL REQUIRED)
@@ -26,7 +54,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/third_party/glfw/CMakeLists.txt")
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    if (NOT WIN32)
+    if(NOT WIN32)
         set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
         set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
     endif()
@@ -81,98 +109,83 @@ else()
     message(FATAL_ERROR "ImPlot submodule not found. Run: git submodule update --init")
 endif()
 
-# ===== Shared sources =====
-set(CPP_SHARED_SOURCES
+# ===== Compile gaussmarch OptiX programs to PTX =====
+set(GAUSSIAN_PTX "${CMAKE_BINARY_DIR}/gaussmarch.ptx")
+
+add_custom_command(
+    OUTPUT "${GAUSSIAN_PTX}"
+    COMMAND "${CMAKE_CUDA_COMPILER}"
+        --ptx
+        -arch ${PARTRACE_PTX_ARCH}
+        -std c++17
+        --use_fast_math
+        -I "${OptiX_INCLUDE}"
+        -I "${CMAKE_SOURCE_DIR}/src"
+        -o "${GAUSSIAN_PTX}"
+        "${CMAKE_SOURCE_DIR}/src/optix_programs/gaussmarch.cu"
+    DEPENDS
+        "${CMAKE_SOURCE_DIR}/src/optix_programs/gaussmarch.cu"
+        "${CMAKE_SOURCE_DIR}/src/optix_programs/gaussmarch_params.h"
+    COMMENT "Compiling gaussmarch OptiX programs to gaussmarch.ptx"
+)
+add_custom_target(gaussian_ptx ALL DEPENDS "${GAUSSIAN_PTX}")
+
+# ===== gaussmarch executable =====
+set(PARTRACE_SOURCES
     third_party/glad/src/glad.c
     third_party/tinyfiledialogs/tinyfiledialogs.c
     src/input/input.cpp
     src/app/app_base.cpp
+    src/app/particle_viewer_app.cpp
     src/io/image_io.cpp
-)
-
-set(CUDA_SHARED_SOURCES
-    src/layers/gauss_activ_layer.cu
-    src/layers/persp_project_layer.cu
-    src/layers/gsplat_rasterize_layer.cu
-    src/layers/mse_loss_layer.cu
-    src/optimizers/adam.cu
-)
-
-# ===== Helper: apply common settings to a target =====
-function(diffsplat_target_setup TARGET)
-    target_include_directories(${TARGET} PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/third_party/glad/include
-        ${CMAKE_SOURCE_DIR}/third_party/stb
-        ${CMAKE_SOURCE_DIR}/third_party/tinyfiledialogs
-        ${CMAKE_SOURCE_DIR}/third_party/cxxopts
-    )
-    target_link_libraries(${TARGET} PRIVATE
-        OpenGL::GL
-        glfw
-        glm::glm
-        CUDA::cuda_driver
-        imgui
-        implot
-    )
-    set_target_properties(${TARGET} PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON
-    )
-    target_compile_options(${TARGET} PRIVATE
-        $<$<COMPILE_LANGUAGE:CUDA>:
-            --use_fast_math
-            -diag-suppress=20012
-            -diag-suppress=20013
-            $<$<CONFIG:Debug>:-lineinfo>
-        >
-    )
-    target_compile_options(${TARGET} PRIVATE
-        # Optimization flags:
-        # Linux: -O3 for release, -O0 -g for debug
-        # Windows/MSVC: /O2 for release, /Od /Zi for debug
-        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:
-            $<$<CONFIG:Release>:-O3>
-            $<$<CONFIG:Debug>:-O0 -g>
-        >
-        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:
-            $<$<CONFIG:Release>:/O2>
-            $<$<CONFIG:Debug>:/Od /Zi>
-        >
-    )
-    target_compile_definitions(${TARGET} PRIVATE
-        $<$<CONFIG:Debug>:DEBUG>
-    )
-endfunction()
-
-# ===== fitter: differentiable image fitter =====
-add_executable(fitter
-    src/main_fitter.cpp
-    src/app/fitter_app.cpp
-    src/utils/gaussian3d_io.cpp
-    src/io/ply_io.cpp
-    src/pipelines/image_fitter.cpp
-    ${CPP_SHARED_SOURCES}
-    ${CUDA_SHARED_SOURCES}
-)
-diffsplat_target_setup(fitter)
-
-# ===== viewer: PLY scene viewer =====
-add_executable(viewer
-    src/main_viewer.cpp
-    src/app/viewer_app.cpp
-    src/utils/gaussian3d_io.cpp
-    src/io/ply_io.cpp
+    src/io/veg_ply_io.cpp
     src/camera/arcball_camera.cpp
     src/camera/fly_camera.cpp
-    src/pipelines/splat_renderer.cpp
-    ${CPP_SHARED_SOURCES}
-    ${CUDA_SHARED_SOURCES}
+    src/pipelines/gaussian_renderer.cpp
+    src/ui/transfer_function.cpp
+    src/main_viewer.cpp
 )
-diffsplat_target_setup(viewer)
+
+add_executable(gaussmarch ${PARTRACE_SOURCES})
+add_dependencies(gaussmarch gaussian_ptx)
+
+target_include_directories(gaussmarch PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/third_party/glad/include
+    ${CMAKE_SOURCE_DIR}/third_party/stb
+    ${CMAKE_SOURCE_DIR}/third_party/tinyfiledialogs
+    ${CMAKE_SOURCE_DIR}/third_party/cxxopts
+    ${CMAKE_SOURCE_DIR}/third_party
+    ${OptiX_INCLUDE}
+)
+
+target_link_libraries(gaussmarch PRIVATE
+    OpenGL::GL
+    glfw
+    glm::glm
+    CUDA::cuda_driver
+    CUDA::cudart
+    imgui
+    implot
+)
+
+target_compile_definitions(gaussmarch PRIVATE
+    GAUSSIAN_PTX_FILE="${GAUSSIAN_PTX}"
+    STBN_FILE="${CMAKE_SOURCE_DIR}/data/img/stbn.png"
+    $<$<CONFIG:Debug>:DEBUG>
+)
+
+target_compile_options(gaussmarch PRIVATE
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Debug>:-O0 -g>
+    >
+)
 
 # ===== Status =====
 message(STATUS "CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-if (CMAKE_BUILD_TYPE)
+message(STATUS "Gaussian PTX output: ${GAUSSIAN_PTX}")
+if(CMAKE_BUILD_TYPE)
     message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 else()
     message(STATUS "Build type: multi-config (${CMAKE_CONFIGURATION_TYPES})")

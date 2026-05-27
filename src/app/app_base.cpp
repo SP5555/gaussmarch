@@ -9,9 +9,13 @@
 #include "implot.h"
 
 #include "../cuda/cuda_check.h"
+#include "../optix/optix_check.h"
 #include "../io/image_io.h"
 #include "../utils/ansi_colors.h"
 #include "../utils/logs.h"
+
+#include <optix_function_table_definition.h>
+#include <optix_stubs.h>
 
 /* ===== ===== GL Boilerplate ===== ===== */
 
@@ -109,7 +113,14 @@ AppBase::AppBase(int width, int height, const std::string &title, bool resizable
     ImPlot::CreateContext();
 
     cudaDeviceProp deviceProp;
+    CUDA_CHECK(cudaSetDevice(0));
     CUDA_CHECK(cudaGetDeviceProperties(&deviceProp, 0));
+
+    // OptiX init -- must happen after cudaSetDevice
+    OPTIX_CHECK(optixInit());
+    CUcontext cu_ctx = 0;  // 0 = current CUDA context
+    OptixDeviceContextOptions optix_opts = {};
+    OPTIX_CHECK(optixDeviceContextCreate(cu_ctx, &optix_opts, &optix_context));
 
     log_info("App", std::string("OpenGL ")
         + (const char*)glGetString(GL_VERSION), ANSI_MAGENTA);
@@ -138,6 +149,11 @@ AppBase::AppBase(int width, int height, const std::string &title, bool resizable
 
 AppBase::~AppBase()
 {
+    if (optix_context) {
+        optixDeviceContextDestroy(optix_context);
+        optix_context = nullptr;
+    }
+
     if (d_pbo_resource)
     {
         CUDA_WARN(cudaGraphicsUnregisterResource(d_pbo_resource));
