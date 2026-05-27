@@ -136,7 +136,7 @@ set(PARTRACE_SOURCES
     third_party/tinyfiledialogs/tinyfiledialogs.c
     src/input/input.cpp
     src/app/app_base.cpp
-    src/app/particle_viewer_app.cpp
+    src/app/gaussmarch_app.cpp
     src/io/image_io.cpp
     src/io/veg_ply_io.cpp
     src/camera/arcball_camera.cpp

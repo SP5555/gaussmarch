@@ -10,12 +10,12 @@
 
 enum class CameraMode { Arcball, Fly };
 
-class ParticleViewerApp : public AppBase
+class GaussmarchApp : public AppBase
 {
 public:
-    ParticleViewerApp(const std::string &ply_path = "",
-                      float scene_scale = 1.f,
-                      CameraMode camera_mode = CameraMode::Arcball);
+    GaussmarchApp(const std::string &ply_path = "",
+                  float scene_scale = 1.f,
+                  CameraMode camera_mode = CameraMode::Arcball);
 
 protected:
     void onStart()  override;

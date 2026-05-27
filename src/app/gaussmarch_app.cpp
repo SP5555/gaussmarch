@@ -1,4 +1,4 @@
-#include "particle_viewer_app.h"
+#include "gaussmarch_app.h"
 
 #include <numeric>
 #include <algorithm>
@@ -16,7 +16,7 @@
 static constexpr int START_W = 1280;
 static constexpr int START_H = 720;
 
-ParticleViewerApp::ParticleViewerApp(const std::string &path, float scale, CameraMode cam_mode)
+GaussmarchApp::GaussmarchApp(const std::string &path, float scale, CameraMode cam_mode)
     : AppBase(START_W, START_H, "gaussmarch -- Gaussian volume renderer", true)
     , ply_path(path)
     , scene_scale(scale)
@@ -32,18 +32,18 @@ ParticleViewerApp::ParticleViewerApp(const std::string &path, float scale, Camer
     std::iota(fps_x.begin(), fps_x.end(), 0.f);
 }
 
-void ParticleViewerApp::loadFile(const std::string &path)
+void GaussmarchApp::loadFile(const std::string &path)
 {
     load_error.clear();
     try {
         renderer.loadGaussians(path, scene_scale);
     } catch (const std::exception &e) {
         load_error = e.what();
-        log_error("ParticleViewerApp", "Load failed: " + load_error);
+        log_error("GaussmarchApp", "Load failed: " + load_error);
     }
 }
 
-void ParticleViewerApp::onStart()
+void GaussmarchApp::onStart()
 {
     renderer.init(optix_context, width, height);
 
@@ -67,7 +67,7 @@ void ParticleViewerApp::onStart()
         loadFile(ply_path);
 }
 
-void ParticleViewerApp::onFrame()
+void GaussmarchApp::onFrame()
 {
     ImGuiIO &io = ImGui::GetIO();
     if (!io.WantCaptureMouse && !io.WantCaptureKeyboard)
@@ -89,13 +89,13 @@ void ParticleViewerApp::onFrame()
     drawUI();
 }
 
-void ParticleViewerApp::onWindowResize(int w, int h)
+void GaussmarchApp::onWindowResize(int w, int h)
 {
     camera->setAspect((float)w / h);
     renderer.resize(w, h);
 }
 
-void ParticleViewerApp::drawUI()
+void GaussmarchApp::drawUI()
 {
     // ===== Main control window =====
     ImGui::SetNextWindowPos({2, 2}, ImGuiCond_Once);
