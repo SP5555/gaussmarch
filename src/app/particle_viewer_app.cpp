@@ -156,6 +156,10 @@ void ParticleViewerApp::drawUI()
 
         // Lighting
         ImGui::Text("Lighting");
+        if (ImGui::Checkbox("Shadows", &renderer.shadows_enabled))
+            renderer.resetAccum();
+
+        ImGui::BeginDisabled(!renderer.shadows_enabled);
         {
             float az_deg = renderer.light_azimuth * 360.f;
             float el_deg = (renderer.light_elevation - 0.5f) * 180.f;   // -90=below, 0=horizon, 90=above
@@ -164,8 +168,9 @@ void ParticleViewerApp::drawUI()
             if (ImGui::SliderFloat("Elevation##deg", &el_deg, -90.f, 90.f, "%.1f deg"))
                 { renderer.light_elevation = el_deg / 180.f + 0.5f; renderer.resetAccum(); }
         }
-        if (ImGui::SliderFloat("Ambient",   &renderer.light_ambient,   0.f, 1.f, "%.2f"))
+        if (ImGui::SliderFloat("Ambient", &renderer.light_ambient, 0.f, 1.f, "%.2f"))
             renderer.resetAccum();
+        ImGui::EndDisabled();
 
         ImGui::Separator();
 
