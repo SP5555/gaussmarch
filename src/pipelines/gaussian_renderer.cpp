@@ -17,6 +17,10 @@
 #include "../utils/logs.h"
 #include "../io/veg_ply_io.h"
 
+// 2.5 not 3: tighter AABBs = faster BVH traversal; tails beyond 2.5-sigma contribute negligible density.
+// Raise toward 3.0 if you see clipping artifacts on very spread-out Gaussians.
+static constexpr float AABB_SIGMA_EXTENT = 2.5f;
+
 // ===== Colormap CUDA helpers =====
 
 static cudaTextureObject_t make_colormap_texture(cudaArray_t arr)
@@ -236,7 +240,7 @@ static void normalizeScene(std::vector<VegGaussian3D> &splats, float scene_scale
     }
 }
 
-// Precomputes Sigma^-1 and 3-sigma AABB half-extents from each Gaussian's scale/rotation.
+// Precomputes Sigma^-1 and AABB_SIGMA_EXTENT AABB half-extents from each Gaussian's scale/rotation.
 
 void GaussianRenderer::loadGaussians(const std::string &path, float scene_scale)
 {
@@ -291,14 +295,14 @@ void GaussianRenderer::loadGaussians(const std::string &path, float scene_scale)
         g.s12 = inv_s2[0]*r[1][0]*r[2][0] + inv_s2[1]*r[1][1]*r[2][1] + inv_s2[2]*r[1][2]*r[2][2];
         g.s22 = inv_s2[0]*r[2][0]*r[2][0] + inv_s2[1]*r[2][1]*r[2][1] + inv_s2[2]*r[2][2]*r[2][2];
 
-        // Sigma_ii (diagonal of Sigma) = sum_k R[i][k]^2 * sk^2  -> 3-sigma AABB half-extents
+        // Sigma_ii (diagonal of Sigma) = sum_k R[i][k]^2 * sk^2  -> AABB half-extents
         float sig00 = s2[0]*r[0][0]*r[0][0] + s2[1]*r[0][1]*r[0][1] + s2[2]*r[0][2]*r[0][2];
         float sig11 = s2[0]*r[1][0]*r[1][0] + s2[1]*r[1][1]*r[1][1] + s2[2]*r[1][2]*r[1][2];
         float sig22 = s2[0]*r[2][0]*r[2][0] + s2[1]*r[2][1]*r[2][1] + s2[2]*r[2][2]*r[2][2];
 
-        float hx = 2.5f * sqrtf(sig00);
-        float hy = 2.5f * sqrtf(sig11);
-        float hz = 2.5f * sqrtf(sig22);
+        float hx = AABB_SIGMA_EXTENT * sqrtf(sig00);
+        float hy = AABB_SIGMA_EXTENT * sqrtf(sig11);
+        float hz = AABB_SIGMA_EXTENT * sqrtf(sig22);
 
         h_extents[idx] = {hx, hy, hz};
 
@@ -345,7 +349,7 @@ void GaussianRenderer::buildBVH()
             uint32_t gid = leaf * GAUSSIANS_PER_LEAF + k;
             if (gid >= num_gaussians) break;
             const GpuGaussian &g = h_gaussians[gid];
-            const float3      &e = h_extents[gid];  // correct 3-sigma extents from Sigma
+            const float3      &e = h_extents[gid];  // AABB_SIGMA_EXTENT extents
 
             lo.x = fminf(lo.x, g.mu_x - e.x);
             lo.y = fminf(lo.y, g.mu_y - e.y);
