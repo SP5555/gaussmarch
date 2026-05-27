@@ -19,7 +19,7 @@ This project is inspired by and builds on ideas from:
 ---
 
 ## Dependencies
-- CUDA Toolkit 12.0+ (tested on 12.8)
+- CUDA Toolkit 12.0+ (tested on 12.8, 13.0)
 - NVIDIA OptiX SDK 8.1
 - OpenGL 3.3+ (provided by your GPU driver)
 - GLAD, stb_image, cxxopts, tinyfiledialogs (included in `third_party/`)
@@ -59,6 +59,13 @@ export OPTIX_INSTALL_DIR=/path/to/OptiX
 
 ### Windows
 
+**PowerShell** (use `$env:` -- not `set`, which creates a PowerShell variable that batch scripts can't see):
+```powershell
+$env:OPTIX_INSTALL_DIR = "C:\path\to\OptiX"
+.\build.bat
+```
+
+**Command Prompt:**
 ```bat
 set OPTIX_INSTALL_DIR=C:\path\to\OptiX
 .\build.bat
@@ -115,7 +122,11 @@ Volumetric shadows are what set gaussmarch apart -- a secondary transmittance ra
 | `--camera` | `arcball` | Camera mode: `fly` or `arcball` |
 
 ```sh
+# Linux
 ./build/gaussmarch [--scene data/veg/vorts.ply] [--camera fly|arcball]
+
+# Windows
+.\build\Release\gaussmarch.exe [--scene data\veg\vorts.ply] [--camera fly|arcball]
 ```
 
 A sample scene (`vorts` -- a simulated tornado vorticity field) is included in `data/veg/vorts.ply`.

@@ -173,6 +173,10 @@ target_compile_definitions(gaussmarch PRIVATE
     GAUSSIAN_PTX_FILE="${GAUSSIAN_PTX}"
     STBN_FILE="${CMAKE_SOURCE_DIR}/data/img/stbn.png"
     $<$<CONFIG:Debug>:DEBUG>
+    # MSVC: suppress min/max macros from <windows.h> that clash with std::max
+    $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
+    # MSVC: expose M_PI and friends from <cmath> (not standard C++, off by default)
+    $<$<CXX_COMPILER_ID:MSVC>:_USE_MATH_DEFINES>
 )
 
 target_compile_options(gaussmarch PRIVATE

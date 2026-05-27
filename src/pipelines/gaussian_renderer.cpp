@@ -495,7 +495,7 @@ void GaussianRenderer::render(const glm::mat4 &view, const glm::mat4 &proj,
     lp.scene_max = {scene_max.x, scene_max.y, scene_max.z};
 
     lp.light_dir     = ld;
-    lp.light_ambient = light_ambient;
+    lp.light_ambient = shadows_enabled ? light_ambient : 1.0f;
 
     lp.output   = d_output.ptr;
     lp.accum    = d_accum.ptr;

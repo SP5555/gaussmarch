@@ -10,7 +10,9 @@ if %errorlevel% neq 0 (
 :: Check OptiX
 if "%OPTIX_INSTALL_DIR%"=="" (
     echo ERROR: OPTIX_INSTALL_DIR is not set.
-    echo   set OPTIX_INSTALL_DIR=C:\path\to\OptiX
+    echo   Command Prompt:  set OPTIX_INSTALL_DIR=C:\path\to\OptiX
+    echo   PowerShell:      $env:OPTIX_INSTALL_DIR = "C:\path\to\OptiX"
+    echo   NOTE: In PowerShell, 'set VAR=...' creates a PS variable, not an env var.
     echo   Or pass it directly: cmake .. -DOptiX_INSTALL_DIR=C:\path\to\OptiX
     exit /b 1
 )

@@ -31,14 +31,15 @@ public:
 
     // Public parameters (read/write from viewer app)
     float step_size          = 0.02f;
-    int   max_depth          = 128;
+    int   max_depth          = 512;
     bool  accum_enabled      = true;
     bool  blue_noise_enabled = false;
 
     // Light
     float light_azimuth   = 0.1111f;  // [0,1] -> [0, 2*pi]; default 40 deg
     float light_elevation = 0.7778f;  // [0,1] -> [0, pi];   default 50 deg
-    float light_ambient   = 0.4f;   // [0,1]; 1.0 = no shadows
+    float light_ambient   = 0.4f;     // [0,1]; 1.0 = no shadows
+    bool  shadows_enabled = true;     // false forces ambient=1.0, skipping shadow rays
 
 private:
     void buildPipeline();
