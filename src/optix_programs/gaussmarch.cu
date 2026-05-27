@@ -212,12 +212,12 @@ extern "C" __global__ void __raygen__gaussian()
                                                      shadow_tenter, shadow_texit);
                     if (shadow_hit && shadow_texit > 0.f) {
                         float shadow_texit_clamped = shadow_texit;
-                        float shadow = 0.f;
+                        float transmittance = 1.f;
                         // Start half a step in to avoid self-intersection
                         float ts = params.step_size * pcg_float(rng);
 
                         int shadow_depth = params.max_depth / 4;
-                        for (int j = 0; j < shadow_depth && ts < shadow_texit_clamped && shadow < 1.f; ++j) {
+                        for (int j = 0; j < shadow_depth && ts < shadow_texit_clamped && transmittance > 1e-4f; ++j) {
                             ts += params.step_size;
                             float3 xs = {
                                 scatter.x + ts * ld.x,
@@ -238,10 +238,9 @@ extern "C" __global__ void __raygen__gaussian()
                             float4 s_tf    = tex1D<float4>(params.colormap, s_scalar);
                             float  s_eff   = sdensity * s_tf.w;
 
-                            shadow += 1.f - expf(-s_eff);
-                            if (shadow > 1.f) shadow = 1.f;
+                            transmittance *= expf(-s_eff);
                         }
-                        visibility = 1.f - shadow;
+                        visibility = transmittance;
                     }
                 }
 
