@@ -79,16 +79,16 @@ void GaussianRenderer::init(OptixDeviceContext ctx, int w, int h)
 void GaussianRenderer::loadSTBN()
 {
     int w, h, n;
-    uint16_t *data = stbi_load_16(STBN_FILE, &w, &h, &n, 1);
+    uint8_t *data = stbi_load(STBN_FILE, &w, &h, &n, 1);
     if (!data) {
         log_error("GaussianRenderer", std::string("STBN load failed: ") + stbi_failure_reason());
         return;
     }
 
     std::vector<float> fdata(w * h);
-    constexpr float inv65535 = 1.f / 65535.f;
+    constexpr float inv255 = 1.f / 255.f;
     for (int i = 0; i < w * h; ++i)
-        fdata[i] = data[i] * inv65535;
+        fdata[i] = data[i] * inv255;
     stbi_image_free(data);
 
     cudaChannelFormatDesc fmt = cudaCreateChannelDesc<float>();

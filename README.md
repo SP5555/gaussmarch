@@ -146,6 +146,8 @@ Lower the ambient slider for stronger volumetric shadows; raise it to wash the s
 
 | Parameter | Description |
 |-----------|-------------|
+| Shadows | Toggle volumetric shadow rays on/off |
 | Azimuth | Light direction horizontal angle (0-360 deg) |
 | Elevation | Light direction vertical angle (-90 = below horizon, 0 = horizon, 90 = above) |
+| Shadow step | Step size for shadow rays -- larger = faster but softer shadows |
 | Ambient | Ambient light factor -- 1.0 = no shadows, 0.0 = full shadows |
