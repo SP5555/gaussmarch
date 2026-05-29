@@ -490,7 +490,8 @@ void GaussianRenderer::render(const glm::mat4 &view, const glm::mat4 &proj,
     lp.gaussians      = d_gaussians.ptr;
     lp.num_gaussians  = num_gaussians;
 
-    lp.step_size = step_size;
+    lp.step_size        = step_size;
+    lp.shadow_step_size = shadow_step_size;
     lp.max_depth = max_depth;
 
     lp.colormap  = colormap_tex;

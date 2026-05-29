@@ -214,11 +214,11 @@ extern "C" __global__ void __raygen__gaussian()
                         float shadow_texit_clamped = shadow_texit;
                         float transmittance = 1.f;
                         // Start half a step in to avoid self-intersection
-                        float ts = params.step_size * pcg_float(rng);
+                        float ts = params.shadow_step_size * pcg_float(rng);
 
                         int shadow_depth = params.max_depth / 4;
                         for (int j = 0; j < shadow_depth && ts < shadow_texit_clamped && transmittance > 1e-4f; ++j) {
-                            ts += params.step_size;
+                            ts += params.shadow_step_size;
                             float3 xs = {
                                 scatter.x + ts * ld.x,
                                 scatter.y + ts * ld.y,
