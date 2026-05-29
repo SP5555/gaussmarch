@@ -48,6 +48,7 @@ struct GaussianLaunchParams {
 
     // Marching
     float step_size;
+    float shadow_step_size;
     int   max_depth;
 
     // Transfer function (scalar -> RGBA)

@@ -131,8 +131,8 @@ void GaussmarchApp::drawUI()
 
         ImGui::Separator();
 
-        // March parameters
-        ImGui::Text("March");
+        // Ray march parameters
+        ImGui::Text("Ray March");
         if (ImGui::SliderFloat("Step size", &renderer.step_size, 0.001f, 0.1f, "%.3f"))
             renderer.resetAccum();
         if (ImGui::SliderInt("Max depth", &renderer.max_depth, 64, 2048))
@@ -168,6 +168,8 @@ void GaussmarchApp::drawUI()
             if (ImGui::SliderFloat("Elevation##deg", &el_deg, -90.f, 90.f, "%.1f deg"))
                 { renderer.light_elevation = el_deg / 180.f + 0.5f; renderer.resetAccum(); }
         }
+        if (ImGui::SliderFloat("Shadow step", &renderer.shadow_step_size, 0.001f, 0.1f, "%.3f"))
+            renderer.resetAccum();
         if (ImGui::SliderFloat("Ambient", &renderer.light_ambient, 0.f, 1.f, "%.2f"))
             renderer.resetAccum();
         ImGui::EndDisabled();

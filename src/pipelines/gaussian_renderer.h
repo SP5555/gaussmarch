@@ -31,6 +31,7 @@ public:
 
     // Public parameters (read/write from viewer app)
     float step_size          = 0.02f;
+    float shadow_step_size   = 0.04f;  // default 2x primary; coarser is fine for shadows
     int   max_depth          = 512;
     bool  accum_enabled      = true;
     bool  blue_noise_enabled = false;
