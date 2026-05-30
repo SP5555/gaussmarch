@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 #include <cmath>
 
 #include <optix_stubs.h>
@@ -316,6 +317,47 @@ void GaussianRenderer::loadGaussians(const std::string &path, float scene_scale)
 
     scene_min = {smin.x, smin.y, smin.z};
     scene_max = {smax.x, smax.y, smax.z};
+
+    // Morton sort: reorder Gaussians along a space-filling curve so spatially
+    // close Gaussians are adjacent in memory -- improves GPU cache coherency
+    // during BVH traversal. One-time cost at load time.
+    {
+        // Interleave one 10-bit value into every 3rd bit position
+        auto expand = [](uint32_t v) -> uint32_t {
+            v &= 0x000003ffu;
+            v = (v | (v << 16)) & 0x030000ffu;
+            v = (v | (v <<  8)) & 0x0300f00fu;
+            v = (v | (v <<  4)) & 0x030c30c3u;
+            v = (v | (v <<  2)) & 0x09249249u;
+            return v;
+        };
+
+        float inv_ex = (smax.x > smin.x) ? 1.f / (smax.x - smin.x) : 0.f;
+        float inv_ey = (smax.y > smin.y) ? 1.f / (smax.y - smin.y) : 0.f;
+        float inv_ez = (smax.z > smin.z) ? 1.f / (smax.z - smin.z) : 0.f;
+
+        std::vector<uint32_t> codes(num_gaussians);
+        for (uint32_t i = 0; i < num_gaussians; ++i) {
+            uint32_t x = (uint32_t)fminf((gpu_data[i].mu_x - smin.x) * inv_ex * 1024.f, 1023.f);
+            uint32_t y = (uint32_t)fminf((gpu_data[i].mu_y - smin.y) * inv_ey * 1024.f, 1023.f);
+            uint32_t z = (uint32_t)fminf((gpu_data[i].mu_z - smin.z) * inv_ez * 1024.f, 1023.f);
+            codes[i] = expand(x) | (expand(y) << 1) | (expand(z) << 2);
+        }
+
+        std::vector<uint32_t> order(num_gaussians);
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(),
+            [&](uint32_t a, uint32_t b) { return codes[a] < codes[b]; });
+
+        std::vector<GpuGaussian> sorted_gpu(num_gaussians);
+        std::vector<float3>      sorted_ext(num_gaussians);
+        for (uint32_t i = 0; i < num_gaussians; ++i) {
+            sorted_gpu[i] = gpu_data[order[i]];
+            sorted_ext[i] = h_extents[order[i]];
+        }
+        gpu_data  = std::move(sorted_gpu);
+        h_extents = std::move(sorted_ext);
+    }
 
     d_gaussians.allocate(num_gaussians);
     CUDA_CHECK(cudaMemcpy(d_gaussians.ptr, gpu_data.data(),
