@@ -90,8 +90,8 @@ Real-time volume renderer for scenes trained with [VEG](https://github.com/ldyke
 Paint your own color map, sculpt the opacity curve, and watch the scene transform **instantly** -- zero reloading, zero retraining, zero lag.
 
 - **Live transfer function** -- recolor and reshape opacity in real time, no retraining.
-- **Delta tracking** -- stochastic ray marching proportional to local density.
-- **Volumetric shadows** -- a transmittance ray from each scatter point reveals depth and internal structure.
+- **Stochastic scatter** -- fixed-step ray march with a delta tracking criterion: accumulate density until a sampled threshold is exceeded, then fire a scatter event.
+- **Volumetric shadows** -- deterministic Beer-Lambert transmittance march from each scatter point toward the light reveals depth and internal structure.
 - **Temporal accumulation** -- averages across frames for a noise-free converged image.
 
 Volumetric shadows are what set gaussmarch apart -- a secondary transmittance ray from each scatter point toward the light reveals internal structure that flat ambient rendering completely hides.

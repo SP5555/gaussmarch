@@ -3,8 +3,8 @@
 // Kernel: Mahalanobis Gaussian  w_i = opacity_i * exp(-0.5 * d2_M)
 //         d2_M = (x-mu)^T * Sigma^-1 * (x-mu)
 //
-// Primary ray: delta tracking -- stochastic scatter on first event.
-// Shadow ray:  deterministic march -- accumulates 1-exp(-eff_density).
+// Primary ray: fixed-step march with delta tracking scatter criterion -- accumulate density until sampled threshold exceeded.
+// Shadow ray:  fixed-step deterministic Beer-Lambert transmittance march.
 
 #include <optix.h>
 #include <cuda_runtime.h>
