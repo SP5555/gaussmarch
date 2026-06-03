@@ -130,6 +130,27 @@ add_custom_command(
 )
 add_custom_target(gaussian_ptx ALL DEPENDS "${GAUSSIAN_PTX}")
 
+# ===== Compile volmarch OptiX programs to PTX =====
+set(VOLUME_PTX "${CMAKE_BINARY_DIR}/volmarch.ptx")
+
+add_custom_command(
+    OUTPUT "${VOLUME_PTX}"
+    COMMAND "${CMAKE_CUDA_COMPILER}"
+        --ptx
+        -arch ${PARTRACE_PTX_ARCH}
+        -std c++17
+        --use_fast_math
+        -I "${OptiX_INCLUDE}"
+        -I "${CMAKE_SOURCE_DIR}/src"
+        -o "${VOLUME_PTX}"
+        "${CMAKE_SOURCE_DIR}/src/optix_programs/volmarch.cu"
+    DEPENDS
+        "${CMAKE_SOURCE_DIR}/src/optix_programs/volmarch.cu"
+        "${CMAKE_SOURCE_DIR}/src/optix_programs/volmarch_params.h"
+    COMMENT "Compiling volmarch OptiX programs to volmarch.ptx"
+)
+add_custom_target(volume_ptx ALL DEPENDS "${VOLUME_PTX}")
+
 # ===== gaussmarch executable =====
 set(PARTRACE_SOURCES
     third_party/glad/src/glad.c
@@ -186,9 +207,64 @@ target_compile_options(gaussmarch PRIVATE
     >
 )
 
+# ===== volmarch executable =====
+set(VOLMARCH_SOURCES
+    third_party/glad/src/glad.c
+    third_party/tinyfiledialogs/tinyfiledialogs.c
+    src/input/input.cpp
+    src/app/app_base.cpp
+    src/app/volmarch_app.cpp
+    src/io/image_io.cpp
+    src/io/raw_volume_io.cpp
+    src/camera/arcball_camera.cpp
+    src/camera/fly_camera.cpp
+    src/pipelines/volume_renderer.cpp
+    src/ui/transfer_function.cpp
+    src/main_volmarch.cpp
+)
+
+add_executable(volmarch ${VOLMARCH_SOURCES})
+add_dependencies(volmarch volume_ptx)
+
+target_include_directories(volmarch PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/third_party/glad/include
+    ${CMAKE_SOURCE_DIR}/third_party/stb
+    ${CMAKE_SOURCE_DIR}/third_party/tinyfiledialogs
+    ${CMAKE_SOURCE_DIR}/third_party/cxxopts
+    ${CMAKE_SOURCE_DIR}/third_party
+    ${OptiX_INCLUDE}
+)
+
+target_link_libraries(volmarch PRIVATE
+    OpenGL::GL
+    glfw
+    glm::glm
+    CUDA::cuda_driver
+    CUDA::cudart
+    imgui
+    implot
+)
+
+target_compile_definitions(volmarch PRIVATE
+    VOLUME_PTX_FILE="${VOLUME_PTX}"
+    STBN_FILE="${CMAKE_SOURCE_DIR}/data/img/stbn8.png"
+    $<$<CONFIG:Debug>:DEBUG>
+    $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
+    $<$<CXX_COMPILER_ID:MSVC>:_USE_MATH_DEFINES>
+)
+
+target_compile_options(volmarch PRIVATE
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Debug>:-O0 -g>
+    >
+)
+
 # ===== Status =====
 message(STATUS "CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 message(STATUS "Gaussian PTX output: ${GAUSSIAN_PTX}")
+message(STATUS "Volume PTX output: ${VOLUME_PTX}")
 if(CMAKE_BUILD_TYPE)
     message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 else()

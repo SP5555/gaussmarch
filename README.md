@@ -151,3 +151,50 @@ Lower the ambient slider for stronger volumetric shadows; raise it to wash the s
 | Elevation | Light direction vertical angle (-90 = below horizon, 0 = horizon, 90 = above) |
 | Shadow step | Step size for shadow rays -- larger = faster but softer shadows |
 | Ambient | Ambient light factor -- 1.0 = no shadows, 0.0 = full shadows |
+
+---
+
+## volmarch (Raw Volume Renderer)
+
+A true volume renderer for raw scalar field data (`.raw` / `.data` binary float32 files). Uses the exact same delta tracking and Beer-Lambert shadow pipeline as gaussmarch, but replaces Gaussian BVH point queries with direct trilinear interpolation into a 3D CUDA texture.
+
+Built primarily as a reference renderer for qualitative comparison against the Gaussian representation, and as a foundation for future work (if I'm feeling powerful!) on end-to-end training pipelines where the ground truth renderer and the inference renderer share the same rendering formulation.
+
+![volmarch cover](assets/volmarch_cover.png)
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--scene` / `-s` | _(none)_ | Path to raw volume file -- if omitted, use the **Open .raw...** button in the UI |
+| `--camera` | `arcball` | Camera mode: `fly` or `arcball` |
+
+Filename must follow the convention `name_DxDxD_float32.raw` so dimensions are parsed automatically. A sample volume (`vorts` -- 128×128×128 float32) is included in `data/raw/vorts1_128x128x128_float32.raw`.
+
+```sh
+# Linux
+./build/volmarch [--scene data/raw/vorts1_128x128x128_float32.raw] [--camera fly|arcball]
+
+# Windows
+.\build\Release\volmarch.exe [--scene data\raw\vorts1_128x128x128_float32.raw] [--camera fly|arcball]
+```
+
+### Render settings
+
+| Parameter | Description |
+|-----------|-------------|
+| Step size | Ray march step distance (world units, scene normalized to [-1, 1]) |
+| Max depth | Maximum march steps per ray |
+| Density scale | Multiplier on raw voxel values -- increase if the volume appears too transparent |
+| Accumulation | Temporal accumulation -- disable to see raw per-frame noise |
+| Blue noise | Use STBN blue noise for sampling instead of PCG random |
+
+### Lighting
+
+Same controls as gaussmarch.
+
+| Parameter | Description |
+|-----------|-------------|
+| Shadows | Toggle volumetric shadow rays on/off |
+| Azimuth | Light direction horizontal angle (0-360 deg) |
+| Elevation | Light direction vertical angle (-90 = below horizon, 0 = horizon, 90 = above) |
+| Shadow step | Step size for shadow rays |
+| Ambient | Ambient light factor -- 1.0 = no shadows, 0.0 = full shadows |

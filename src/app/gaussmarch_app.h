@@ -4,11 +4,10 @@
 #include <vector>
 
 #include "app_base.h"
+#include "../camera/camera_mode.h"
 #include "../pipelines/gaussian_renderer.h"
 #include "../camera/camera.h"
 #include "tfn/widget.h"
-
-enum class CameraMode { Arcball, Fly };
 
 class GaussmarchApp : public AppBase
 {

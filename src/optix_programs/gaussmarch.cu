@@ -213,8 +213,8 @@ extern "C" __global__ void __raygen__gaussian()
                     if (shadow_hit && shadow_texit > 0.f) {
                         float shadow_texit_clamped = shadow_texit;
                         float transmittance = 1.f;
-                        // Start half a step in to avoid self-intersection
-                        float ts = params.shadow_step_size * pcg_float(rng);
+                        // Bias by one full step to avoid shadow acne from self-intersection
+                        float ts = params.shadow_step_size * (1.f + pcg_float(rng));
 
                         int shadow_depth = params.max_depth / 4;
                         for (int j = 0; j < shadow_depth && ts < shadow_texit_clamped && transmittance > 1e-4f; ++j) {
