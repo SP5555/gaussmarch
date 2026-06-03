@@ -1,5 +1,5 @@
 # gaussmarch
-An OptiX 8 volume renderer for **[Volume Encoding Gaussians (VEG)](https://github.com/ldyken53/VEG)** -- scalar-field Gaussians with delta tracking ray marching and volumetric shadows.
+An OptiX volume renderer for **[Volume Encoding Gaussians (VEG)](https://github.com/ldyken53/VEG)** -- scalar-field Gaussians with delta tracking ray marching and volumetric shadows.
 
 ![gaussmarch cover](assets/cover.png)
 
@@ -20,7 +20,7 @@ This project is inspired by and builds on ideas from:
 
 ## Dependencies
 - CUDA Toolkit 12.0+ (tested on 12.8, 13.0)
-- NVIDIA OptiX SDK 8.1
+- NVIDIA OptiX SDK 8.1+ (tested on 8.1, 9.0)
 - OpenGL 3.3+ (provided by your GPU driver)
 - GLAD, stb_image, cxxopts, tinyfiledialogs (included in `third_party/`)
 - GLFW3, GLM, Dear ImGui, ImPlot (included as submodules in `third_party/`)
@@ -48,7 +48,7 @@ export OPTIX_INSTALL_DIR=/path/to/OptiX
 Or manually:
 ```sh
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DOptiX_INSTALL_DIR=/path/to/OptiX [-DCMAKE_CUDA_ARCHITECTURES=89]
+cmake .. -DCMAKE_BUILD_TYPE=Release -DOptiX_INSTALL_DIR=/path/to/OptiX
 cmake --build . --parallel $(nproc)
 ```
 
@@ -74,7 +74,7 @@ set OPTIX_INSTALL_DIR=C:\path\to\OptiX
 Or manually:
 ```bat
 mkdir build && cd build
-cmake .. -G "Visual Studio 17 2022" -A x64 -DOptiX_INSTALL_DIR="C:\path\to\OptiX" [-DCMAKE_CUDA_ARCHITECTURES=89]
+cmake .. -G "Visual Studio 17 2022" -A x64 -DOptiX_INSTALL_DIR="C:\path\to\OptiX"
 cmake --build . --config Release --parallel
 ```
 

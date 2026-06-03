@@ -1,4 +1,10 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.24)
+
+# Must be set before project() so CMake's CUDA init doesn't override it with 52.
+# Override on the command line: -DCMAKE_CUDA_ARCHITECTURES=89
+set(CMAKE_CUDA_ARCHITECTURES native CACHE STRING "CUDA architectures to target")
+set(PARTRACE_PTX_ARCH "native" CACHE STRING "PTX target architecture for OptiX programs")
+
 project(gaussmarch LANGUAGES C CXX CUDA)
 
 # ===== Standards =====
@@ -8,11 +14,6 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# ===== CUDA Architecture =====
-# RTX 4060 Laptop = SM 8.9.
-set(CMAKE_CUDA_ARCHITECTURES 89)
-set(PARTRACE_PTX_ARCH "sm_89" CACHE STRING "PTX target architecture for gaussmarch.cu")
 
 # ===== OptiX SDK =====
 # Pass -DOptiX_INSTALL_DIR=/path/to/OptiX at configure time, or set the
