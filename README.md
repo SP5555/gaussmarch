@@ -154,6 +154,27 @@ Lower the ambient slider for stronger volumetric shadows; raise it to wash the s
 
 ---
 
+## gaussmarch_snap (Headless Renderer)
+
+Offline, windowless renderer that reads a JSON config and writes a single converged PNG. Useful for reproducible figures -- set the exact camera, transfer function, and lighting once, re-render any time.
+
+```sh
+# Linux
+./build/gaussmarch_snap --config data/veg/snap_vorts.json
+
+# Windows
+.\build\Release\gaussmarch_snap.exe --config data\veg\snap_vorts.json
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--config` / `-c` | _(required)_ | Path to render config JSON |
+| `--scene` | _(from config)_ | Override the scene path in the config |
+
+A sample config is included at `data/veg/snap_vorts.json`. The JSON controls output resolution, accumulation frame count, camera (pos/look/up/fov), all render and lighting parameters, and the transfer function as a list of RGBA control points. The `up` vector does not need to be perfectly perpendicular -- it is orthogonalized automatically.
+
+---
+
 ## volmarch (Raw Volume Renderer)
 
 A true volume renderer for raw scalar field data (`.raw` / `.data` binary float32 files). Uses the exact same delta tracking and Beer-Lambert shadow pipeline as gaussmarch, but replaces Gaussian BVH point queries with direct trilinear interpolation into a 3D CUDA texture.

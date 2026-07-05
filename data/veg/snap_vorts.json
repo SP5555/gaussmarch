@@ -1,0 +1,33 @@
+{
+  "scene": "data/veg/vorts.ply",
+  "output": "render.png",
+  "width": 1920,
+  "height": 1080,
+  "accumulation_frames": 128,
+
+  "camera": {
+    "pos":  [2.0, 0.0, 3.0],
+    "look": [0.0, 0.0, 0.0],
+    "up":   [0.0, 1.0, 0.0],
+    "fov":  45.0
+  },
+
+  "render": {
+    "step_size":       0.01,
+    "shadow_step":     0.02,
+    "max_depth":       400,
+    "shadows":         true,
+    "ambient":         0.4,
+    "light_azimuth":   40.0,
+    "light_elevation": 30.0,
+    "blue_noise":      true,
+    "scale":           1.0
+  },
+
+  "transfer_function": [
+    { "t": 0.00, "r": 0.0, "g": 0.0, "b": 1.0, "a": 0.0 },
+    { "t": 0.33, "r": 0.0, "g": 1.0, "b": 1.0, "a": 0.5 },
+    { "t": 0.66, "r": 1.0, "g": 1.0, "b": 0.0, "a": 0.8 },
+    { "t": 1.00, "r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0 }
+  ]
+}

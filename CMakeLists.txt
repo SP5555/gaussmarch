@@ -165,7 +165,7 @@ set(PARTRACE_SOURCES
     src/camera/fly_camera.cpp
     src/pipelines/gaussian_renderer.cpp
     src/ui/transfer_function.cpp
-    src/main_viewer.cpp
+    src/main_gaussmarch.cpp
 )
 
 add_executable(gaussmarch ${PARTRACE_SOURCES})
@@ -256,6 +256,46 @@ target_compile_definitions(volmarch PRIVATE
 )
 
 target_compile_options(volmarch PRIVATE
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Debug>:-O0 -g>
+    >
+)
+
+# ===== gaussmarch_snap executable (headless offline renderer) =====
+set(SNAP_SOURCES
+    src/pipelines/gaussian_renderer.cpp
+    src/io/veg_ply_io.cpp
+    src/io/image_io.cpp
+    src/main_gaussmarch_snap.cpp
+)
+
+add_executable(gaussmarch_snap ${SNAP_SOURCES})
+add_dependencies(gaussmarch_snap gaussian_ptx)
+
+target_include_directories(gaussmarch_snap PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/third_party/nlohmann
+    ${CMAKE_SOURCE_DIR}/third_party/stb
+    ${CMAKE_SOURCE_DIR}/third_party/cxxopts
+    ${CMAKE_SOURCE_DIR}/third_party
+    ${OptiX_INCLUDE}
+)
+
+target_link_libraries(gaussmarch_snap PRIVATE
+    glm::glm
+    CUDA::cuda_driver
+    CUDA::cudart
+)
+
+target_compile_definitions(gaussmarch_snap PRIVATE
+    GAUSSIAN_PTX_FILE="${GAUSSIAN_PTX}"
+    STBN_FILE="${CMAKE_SOURCE_DIR}/data/img/stbn8.png"
+    $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
+    $<$<CXX_COMPILER_ID:MSVC>:_USE_MATH_DEFINES>
+)
+
+target_compile_options(gaussmarch_snap PRIVATE
     $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:
         $<$<CONFIG:Release>:-O3>
         $<$<CONFIG:Debug>:-O0 -g>
